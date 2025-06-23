@@ -28,11 +28,11 @@ class Solver(eqx.Module):
     Solves the Vlasov-BGK equation
     """
     def __init__(self,
-                 plasma: TwoSpeciesPlasma, 
+                 plasma: TwoSpeciesPlasma,
                  grids,
                  flux_source_enabled,
-                 nu_ee, 
-                 nu_ii, 
+                 nu_ee,
+                 nu_ii,
                  adjoint_method=None):
         self.plasma = plasma
         self.grids = grids
@@ -81,12 +81,14 @@ class Solver(eqx.Module):
         fi = fs['ion']
         # HACKATHON: Solve poisson equation for E
         # See poisson.py -- poisson_solve()
-        E = jnp.zeros(self.grids['x'].Nx)
-        
-        electron_rhs = self.vlasov_fp_single_species_rhs(fe, E, self.plasma.Ae, self.plasma.Ze, 
+        rho_c = self.plasma.Zi * zeroth_moment(fi, self.grids['ion'])
+                    + self.plasma.Ze * zeroth_moment(fe, self.grids['electron'])
+        E = poisson_solve(self.grids['x'], self.plasma, rho_c, boundary_conditions)
+
+        electron_rhs = self.vlasov_fp_single_species_rhs(fe, E, self.plasma.Ae, self.plasma.Ze,
                                                          self.grids['electron'],
                                                          boundary_conditions['electron'], self.nu_ee)
-        ion_rhs = self.vlasov_fp_single_species_rhs(fi, E, self.plasma.Ai, self.plasma.Zi, 
+        ion_rhs = self.vlasov_fp_single_species_rhs(fi, E, self.plasma.Ai, self.plasma.Zi,
                                                          self.grids['ion'],
                                                          boundary_conditions['ion'], self.nu_ii)
 
@@ -115,7 +117,7 @@ class Solver(eqx.Module):
 
         v = jnp.expand_dims(grid.vs, axis=0)
         F = lambda left, right: jnp.where(v > 0, left * v, right * v)
-        vdfdx = slope_limited_flux_divergence(f_bc_x, 'minmod', F, 
+        vdfdx = slope_limited_flux_divergence(f_bc_x, 'minmod', F,
                                               grid.dx,
                                               axis=0)
 
