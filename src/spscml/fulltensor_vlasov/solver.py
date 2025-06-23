@@ -135,9 +135,6 @@ class Solver(eqx.Module):
         ns = zeroth_moment(f, grid)
         M = maxwellian(grid, A, ns)
 
-
-
-        #print(f"maxwell = {maxwell()}")
         Q = nu*(M - f)
         return -vdfdx - Edfdv + Q
 
