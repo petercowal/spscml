@@ -139,7 +139,7 @@ class Solver(eqx.Module):
 
         #print(f"maxwell = {maxwell()}")
         Q = nu*(M - f)
-        return -vdfdx - Edfdv
+        return -vdfdx - Edfdv + Q
 
 
     def apply_bcs(self, f, bcs, dim):
