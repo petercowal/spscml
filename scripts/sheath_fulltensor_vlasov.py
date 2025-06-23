@@ -22,11 +22,11 @@ vti = jnp.sqrt(Ti / Ai)
 
 plasma = TwoSpeciesPlasma(1.0, 1.0, 0.0, Ai, Ae, 1.0, -1.0)
 
-x_grid = Grid(800, 200)
-ion_grid = x_grid.extend_to_phase_space(6*vti, 400)
-electron_grid = x_grid.extend_to_phase_space(6*vte, 400)
+x_grid = Grid(200, 50)
+ion_grid = x_grid.extend_to_phase_space(6*vti, 100)
+electron_grid = x_grid.extend_to_phase_space(6*vte, 100)
 
-initial_conditions = { 
+initial_conditions = {
     'electron': lambda x, v: 1 / (jnp.sqrt(2*jnp.pi)*vte) * jnp.exp(-Ae*(v**2) / (2*Te)),
     'ion': lambda x, v: 1 / (jnp.sqrt(2*jnp.pi)*vti) * jnp.exp(-Ai*(v**2) / (2*Ti))
 }
@@ -70,7 +70,7 @@ boundary_conditions = {
 }
 
 nu = 1.0
-solver = Solver(plasma, 
+solver = Solver(plasma,
                 {'x': x_grid, 'electron': electron_grid, 'ion': ion_grid},
                 flux_source_enabled=True,
                 nu_ee=nu*5, nu_ii=nu)
