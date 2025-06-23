@@ -57,5 +57,5 @@ def maxwellian(grid, A, n, T=1.0):
     """
     v = grid.vs
     theta = T / A
-    M = jnp.expand_dims(n,1) / (jnp.sqrt(2*jnp.pi*theta)) * jnp.exp(-jnp.expand_dims(v,0)**2 / (2*theta))
+    M = jnp.expand_dims(n, 1) / (jnp.sqrt(2*jnp.pi*theta)) * jnp.exp(-jnp.expand_dims(v, 0)**2 / (2*theta))
     return M
