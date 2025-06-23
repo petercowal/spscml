@@ -13,8 +13,8 @@ from ..grids import PhaseSpaceGrid
 from ..rk import rk1, ssprk2, imex_ssp2, imex_euler
 from ..muscl import slope_limited_flux_divergence
 from ..poisson import poisson_solve
-from ..utils import zeroth_moment, first_moment, second_moment, maxwellian_1d, temperature
-from ..collisions_and_sources import flux_source_shape_func
+from ..utils import zeroth_moment, first_moment, second_moment, temperature
+from ..collisions_and_sources import flux_source_shape_func, maxwellian
 
 class Solver(eqx.Module):
     plasma: TwoSpeciesPlasma
@@ -124,7 +124,6 @@ class Solver(eqx.Module):
                                               grid.dx,
                                               axis=0)
 
-        # HACKATHON: implement E*df/dv term
         Eflux = self.plasma.omega_c_tau*Z/A * jnp.expand_dims(E, axis=1)
         G = lambda left, right: jnp.where(Eflux > 0, left * Eflux, right * Eflux)
         Edfdv = slope_limited_flux_divergence(f_bc_v, 'minmod', G,
@@ -132,15 +131,14 @@ class Solver(eqx.Module):
                                             axis=1)
 
         # HACKATHON: implement BGK collision term
-        T = temperature(f, A, grid)
-
+        #T = temperature(f, A, grid)
         ns = zeroth_moment(f, grid)
+        M = maxwellian(grid, A, ns)
 
-        maxwell = maxwellian_1d(A, ns, nu, T)
+
 
         #print(f"maxwell = {maxwell()}")
-
-        #Q = nu*(maxwell(None, v) - f)
+        Q = nu*(M - f)
         return -vdfdx - Edfdv
 
 
