@@ -23,13 +23,13 @@ ureg = jpu.UnitRegistry()
 # Parse command line arguments
 def parse_args():
     args = sys.argv[1:]  # Skip the script name
-    
+
     # Default values
     Vc0 = 40*1e3  # 40kV
     T = 20.0      # 20 eV
     Vp = 500.0    # 500 V
-    image = "tanh_sheath"  # Default tesseract image
-    
+    tesseract = "vlasov_sheath"  # Default tesseract image
+
     # Parse arguments
     i = 0
     while i < len(args):
@@ -57,14 +57,14 @@ def parse_args():
             print(f"Unknown argument: {args[i]}")
             print("Use --help for usage information")
             sys.exit(1)
-            
-    return Vc0, T, Vp, image
+
+    return Vc0, T, Vp, tesseract
 
 Vc0, T_input, Vp_input, image_name = parse_args()
 
 print(f"Running WDM simulation with:")
 print(f"  Vc0 = {Vc0} V")
-print(f"  T = {T_input} eV") 
+print(f"  T = {T_input} eV")
 print(f"  Vp = {Vp_input} V")
 print(f"  Tesseract image = {image_name}")
 
@@ -110,4 +110,3 @@ with Tesseract.from_tesseract_api(tanh_sheath_tesseract_api) as sheath_tx:
         t_end=2e-5,
         mlflow_parent_run_id=None
     ), sheath_tx)
-
