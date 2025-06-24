@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from tesseract_core import Tesseract
 from tesseract_jax import apply_tesseract
 import wdm.tesseract_api as tesseract_api
-import sheaths.tanh_sheath.tesseract_api as tanh_sheath_tesseract_api
+import sheaths.vlasov.tesseract_api as vlasov_sheath_tesseract_api
 import jpu
 import equinox as eqx
 import mlflow
@@ -83,7 +83,7 @@ n0 = 6e22 * ureg.m**-3
 Z = 1.0
 
 
-with Tesseract.from_tesseract_api(tanh_sheath_tesseract_api) as sheath_tx:
+with Tesseract.from_tesseract_api(vlasov_sheath_tesseract_api) as sheath_tx:
     Vp0 = Vp_input * ureg.volts
 
     T0 = T_input * ureg.eV
