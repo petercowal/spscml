@@ -12,6 +12,7 @@ from tesseract_jax import apply_tesseract
 import wdm.tesseract_api as tesseract_api
 import sheaths.tanh_sheath.tesseract_api as tanh_sheath_tesseract_api
 import sheaths.vlasov.tesseract_api as vlasov_sheath_tesseract_api
+import sheaths.pinn_sheath.tesseract_api as pinn_sheath_tesseract_api
 import jpu
 import optimistix as optx
 import scipy.optimize as opt
@@ -29,10 +30,10 @@ ureg = jpu.UnitRegistry()
 # Parse command line arguments
 def parse_args():
     args = sys.argv[1:]  # Skip the script name
-    
-    
+
+
     # Use the initial plasma from Fig 7 of Shumlak et al. (2012) as an example
-    n0 = 6e22 * ureg.m**-3 #intial particle density? 
+    n0 = 6e22 * ureg.m**-3 #intial particle density?
 
     # default RLC params
     R = 1.5e-3
@@ -42,9 +43,9 @@ def parse_args():
     # Default values/initial values
     Vc0 = 40*1e3  # 50kV
     T = 20.0      # 20 eV
-    Vp = 500.0    # 500 V
-    tesseract = "tanh_sheath"  # Default tesseract image
-    
+    Vp = 5000.0    # 500 V
+    tesseract = "nn_sheath"  # Default tesseract image
+
     # Parse arguments
     i = 0
     while i < len(args):
@@ -84,7 +85,7 @@ def parse_args():
             print(f"Unknown argument: {args[i]}")
             print("Use --help for usage information")
             sys.exit(1)
-        
+
     return Vc0, T, Vp, n0, tesseract, R, L, C
 
 
@@ -94,7 +95,7 @@ Vc0, T_input, Vp_input, n0, tesseract_name, R, L, C = parse_args()
 
 print(f"Running WDM simulation with:")
 print(f"  Vc0 = {Vc0} V")
-print(f"  T = {T_input} eV") 
+print(f"  T = {T_input} eV")
 print(f"  Vp = {Vp_input} V")
 print(f"  n0 = {n0} m^-3")
 print(f"  Tesseract = {tesseract_name}")
@@ -116,6 +117,8 @@ if tesseract_name == "tanh_sheath":
     tesseract_api = tanh_sheath_tesseract_api
 elif tesseract_name == "vlasov_sheath":
     tesseract_api = vlasov_sheath_tesseract_api
+elif tesseract_name == "nn_sheath":
+    tesseract_api = pinn_sheath_tesseract_api
 
 sheath_tx = Tesseract.from_tesseract_api(tesseract_api)
 
@@ -131,7 +134,7 @@ def tessCallback(Vp_input, T_input, n0, tesseract_api) -> dict:
     #     Vp0 = jnp.array(Vp_i.magnitude)
 
     j = apply_tesseract(sheath_tx, dict(
-        n=jnp.array(n0.magnitude), T=jnp.array(T0.magnitude), 
+        n=jnp.array(n0.magnitude), T=jnp.array(T0.magnitude),
         Vp=jnp.array(Vp0.magnitude), Lz=jnp.array(0.5)
         ))["j"] * (ureg.A / ureg.m**2)
     N = ((8*jnp.pi * (1 + Z) * T0 * n0**2) / (ureg.mu0 * j**2)).to(ureg.m**-1)
@@ -178,7 +181,7 @@ def objective_fn(Vp):
 def scipy_vg(_Vp):
     """Value and gradient function for scipy optimization."""
     # __Vp = jnp.array(_Vp)
-    __Vp = jnp.array(extract_value(_Vp))  
+    __Vp = jnp.array(extract_value(_Vp))
 
     fval, gradVal = fgrad_fn(__Vp)
     fval = np.array(fval)
@@ -206,12 +209,12 @@ print(f"Objective function value for Vp={Vp_input} V: {obj_fn_value:.2f} W")
 f = lambda Vp: objective_fn(Vp)
 fgrad_fn = jax.value_and_grad(f)
 
-    
+
 fval, gradVal = fgrad_fn(Vp_input)
 print(f"Value and Gradient of objective function at Vp={Vp_input} f: {fval:.5f} W df/dx: {gradVal:.5f} W/V")
 
 
-res = opt.minimize(scipy_vg, Vp_input, method='L-BFGS-B', jac=True, options={'disp': True, 'maxiter': 100}, bounds=[(400, 10e3)])
+res = opt.minimize(scipy_vg, Vp_input, method='L-BFGS-B', jac=True, options={'disp': True, 'maxiter': 100}, bounds=[(400, 20e3)])
 
 
 print(f"Optimized Vp: {res.x[0]:.2f} V")
@@ -219,4 +222,3 @@ print(f"Objective function value at optimized Vp: {res.fun:.2f} W")
 print(f"Gradient at optimized Vp: {res.jac[0]:.2f} W/V")
 print(f"Success: {res.success}, Message: {res.message}")
 print(f"Number of iterations: {res.nit}")
-
