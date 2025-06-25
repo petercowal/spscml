@@ -30,7 +30,7 @@ def parse_args():
     Vc0 = 40*1e3  # 40kV
     T = 20.0      # 20 eV
     Vp = 500.0    # 500 V
-    tesseract = "vlasov_sheath"  # Default tesseract image
+    tesseract = "tanh_sheath"  # Default tesseract image
 
     # Parse arguments
     i = 0
@@ -44,15 +44,15 @@ def parse_args():
         elif args[i] == '--Vp' and i + 1 < len(args):
             Vp = float(args[i + 1])
             i += 2
-        elif args[i] == '--image' and i + 1 < len(args):
-            image = args[i + 1]
+        elif args[i] == '--tesseract' and i + 1 < len(args):
+            tesseract = args[i + 1]
             i += 2
         elif args[i] == '--help' or args[i] == '-h':
             print("Usage: python run_wdm.py [--Vc0 VALUE] [--T VALUE] [--Vp VALUE] [--image NAME]")
             print("  --Vc0 VALUE   Total capacitor voltage in volts (default: 40000)")
             print("  --T VALUE     Initial temperature in eV (default: 20.0)")
             print("  --Vp VALUE    Initial plasma voltage in volts (default: 500.0)")
-            print("  --image NAME  Tesseract image name (default: vlasov_sheath)")
+            print("  --tesseract NAME  Tesseract name (default: tanh_sheath)")
             print("  --help, -h    Show this help message")
             sys.exit(0)
         else:
@@ -62,13 +62,13 @@ def parse_args():
 
     return Vc0, T, Vp, tesseract
 
-Vc0, T_input, Vp_input, image_name = parse_args()
+Vc0, T_input, Vp_input, tesseract_name = parse_args()
 
 print(f"Running WDM simulation with:")
 print(f"  Vc0 = {Vc0} V")
 print(f"  T = {T_input} eV")
 print(f"  Vp = {Vp_input} V")
-print(f"  Tesseract image = {image_name}")
+print(f"  Tesseract = {tesseract_name}")
 
 R = 1.5e-3
 L = 2.0e-7

@@ -13,7 +13,7 @@ from ..grids import PhaseSpaceGrid
 from ..rk import rk1, ssprk2, imex_ssp2, imex_euler
 from ..muscl import slope_limited_flux_divergence
 from ..poisson import poisson_solve
-from ..utils import zeroth_moment, first_moment, second_moment, temperature
+from ..utils import zeroth_moment, first_moment, second_moment
 from ..collisions_and_sources import flux_source_shape_func, maxwellian
 
 class Solver(eqx.Module):
@@ -81,11 +81,14 @@ class Solver(eqx.Module):
         fi = fs['ion']
         # HACKATHON: Solve poisson equation for E
         # See poisson.py -- poisson_solve()
-        rho_c = (
-            self.plasma.Zi * zeroth_moment(fi, self.grids['ion'])
-            + self.plasma.Ze * zeroth_moment(fe, self.grids['electron'])
-        )
+        rho_e = self.plasma.Ze * zeroth_moment(fe, self.grids['electron'])
+        rho_i = self.plasma.Zi * zeroth_moment(fi, self.grids['ion'])
+        rho_c = rho_e + rho_i
+
         E = poisson_solve(self.grids['x'], self.plasma, rho_c, boundary_conditions)
+
+
+        # E = jnp.zeros(self.grids['x'].Nx)
 
         electron_rhs = self.vlasov_fp_single_species_rhs(fe, E, self.plasma.Ae, self.plasma.Ze,
                                                          self.grids['electron'],
@@ -123,19 +126,23 @@ class Solver(eqx.Module):
         vdfdx = slope_limited_flux_divergence(f_bc_x, 'minmod', F,
                                               grid.dx,
                                               axis=0)
+        E2 = jnp.expand_dims(E, axis=1)  # Expand E to match the shape of f
+        # HACKATHON: implement E*df/dv term
+        E_term = (self.plasma.omega_c_tau) * Z * E2 / A
+        F_E = lambda left, right: jnp.where(E_term > 0, left * E_term, right * E_term) #upwinding function
+        Edfdv = slope_limited_flux_divergence(f_bc_v, 'minmod', F_E,
+                                              grid.dv,
+                                              axis=1)
 
-        Eflux = self.plasma.omega_c_tau*Z/A * jnp.expand_dims(E, axis=1)
-        G = lambda left, right: jnp.where(Eflux > 0, left * Eflux, right * Eflux)
-        Edfdv = slope_limited_flux_divergence(f_bc_v, 'minmod', G,
-                                            grid.dv,
-                                            axis=1)
 
         # HACKATHON: implement BGK collision term
-        #T = temperature(f, A, grid)
-        ns = zeroth_moment(f, grid)
-        M = maxwellian(grid, A, ns)
+        # maxwellian distribution
+        n = zeroth_moment(f, grid)
+        M = maxwellian(grid, A, n, T=1.0)
 
-        Q = nu*(M - f)
+        # # collision term
+        Q = nu * (M - f)
+
         return -vdfdx - Edfdv + Q
 
 
@@ -156,7 +163,7 @@ class Solver(eqx.Module):
         elif axis == 1:
             if bc == 'periodic':
                 left = f[:, -2:]
-                right = r[:, :2]
+                right = f[:, :2]
             else:
                 left = bc['left'](f[:, 0:2])
                 right = bc['right'](f[:, -2:])

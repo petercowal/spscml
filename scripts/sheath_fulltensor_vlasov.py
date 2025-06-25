@@ -38,6 +38,9 @@ vte = jnp.sqrt(Te / Ae)
 vti = jnp.sqrt(Ti / Ai)
 
 
+x_grid = Grid(400, 200)
+ion_grid = x_grid.extend_to_phase_space(6*vti, 200)
+electron_grid = x_grid.extend_to_phase_space(6*vte, 200)
 
 
 norm = plasma_norm(20, 6e22)
